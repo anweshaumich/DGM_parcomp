@@ -100,3 +100,73 @@ pool startedinitialization complete
  starting 17. 
 
  ending 17. 
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+
+ starting 3. 
+
+ ending 1. 
+
+ ending 3. 
+
+ starting 8. 
+
+ ending 8. 
+
+ starting 2. 
+
+ ending 2. 
+
+ starting 7. 
+
+ ending 7. 
+
+ starting 13. 
+
+ ending 13. 
+
+ starting 12. 
+
+ ending 12. 
+
+ starting 6. 
+
+ ending 6. 
+
+ starting 5. 
+
+ ending 5. 
+
+ starting 11. 
+
+ ending 11. 
+
+ starting 4. 
+
+ ending 4. 
+
+ starting 10. 
+
+ ending 10. 
+
+ starting 15. 
+
+ ending 15. 
+
+ starting 9. 
+
+ ending 9. 
+
+ starting 14. 
+
+ ending 14. 
+
+ starting 16. 
+
+ ending 16. 
+
+ starting 17. 
+
+ ending 17. 
