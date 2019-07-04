@@ -92,7 +92,7 @@ parfor j = 1:p
             b = binornd(1,Acc);
             b(isnan(b)) = 1;
             theta_old(i) = theta_new(i)*b + (1-b)*theta_old(i);
-            G_old = G_new; h_old = h_new;
+            G_old = G_new*b + (1-b)*G_old; h_old = h_new*b+(1-b)*h_old;
         end
         %step(i) = exp(log(step(i)) + (1/jj^0.6)*(Acc - log(step(i))); %%%% adaptive step
         end
@@ -149,12 +149,13 @@ parfor j = 1:p
         if rho_fixed==0
            % Update rho
             rho_n = normrnd(rho,exp(tow_o));
-            rho_n = max(rho_n,.0000000001);
+            if rho_n>0
             k3 = (rho-rho_n)*sum(abs(theta_old)) + sum(dd)*(log(rho_n/2) - log(rho/2));
             k4 = min(1,exp(k3));
             br = binornd(1,k4);
             rho = rho_n*br + (1-br)*rho;
             tow_o = tow_o + ff*(k4 - .3)/(jj^mc_rate);
+            end
              
             if abs(tow_o)>compact
                 compact = compact + inc;
