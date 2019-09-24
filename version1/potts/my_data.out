@@ -1,0 +1,172 @@
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 84. 
+{Error using <a href="matlab:matlab.internal.language.introspective.errorDocCallback('langevin_dat_gaussian', 'C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\potts\langevin_dat_gaussian.m', 25)" style="font-weight:bold">langevin_dat_gaussian</a> (<a href="matlab: opentoline('C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\potts\langevin_dat_gaussian.m',25,0)">line 25</a>)
+Index in position 2 exceeds array bounds (must not exceed 17).
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('par_discretegraph', 'C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\par_discretegraph.m', 32)" style="font-weight:bold">par_discretegraph</a> (<a href="matlab: opentoline('C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\par_discretegraph.m',32,0)">line 32</a>)
+[~,~, delta, theta] = langevin_dat_gaussian(X,gam,sam,step,c,block,...
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('testing', 'C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\testing.m', 1)" style="font-weight:bold">testing</a> (<a href="matlab: opentoline('C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\testing.m',1,0)">line 1</a>)
+par_discretegraph('data.csv',1000,900,2,2);
+} 
+delete('gcpnocreate')
+[Warning: File 'gcpnocreate' not found.] 
+testing
+start{Error using <a href="matlab:matlab.internal.language.introspective.errorDocCallback('parpool', 'C:\Program Files\MATLAB\R2018a\toolbox\distcomp\cluster\parpool.m', 113)" style="font-weight:bold">parpool</a> (<a href="matlab: opentoline('C:\Program Files\MATLAB\R2018a\toolbox\distcomp\cluster\parpool.m',113,0)">line 113</a>)
+Found an interactive session. You cannot have multiple interactive sessions open simultaneously. To terminate
+the existing session, use 'delete(gcp('nocreate'))'.
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('langevin_dat_gaussian', 'C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\potts\langevin_dat_gaussian.m', 6)" style="font-weight:bold">langevin_dat_gaussian</a> (<a href="matlab: opentoline('C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\potts\langevin_dat_gaussian.m',6,0)">line 6</a>)
+myPool = parpool('local', nr_of_cores);
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('par_discretegraph', 'C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\par_discretegraph.m', 32)" style="font-weight:bold">par_discretegraph</a> (<a href="matlab: opentoline('C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\par_discretegraph.m',32,0)">line 32</a>)
+[~,~, delta, theta] = langevin_dat_gaussian(X,gam,sam,step,c,block,...
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('testing', 'C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\testing.m', 1)" style="font-weight:bold">testing</a> (<a href="matlab: opentoline('C:\Users\Anwesha\Documents\GitHub\DGM_parcomp\software\testing.m',1,0)">line 1</a>)
+par_discretegraph('data.csv',1000,900,2,2);
+} 
+delete(gcp('nocreate'))
+Parallel pool using the 'local' profile is shutting down.
+testing
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+
+ starting 3. 
+
+ ending 1. 
+
+ ending 3. 
+
+ starting 2. 
+
+ ending 2. 
+
+ starting 8. 
+
+ ending 8. 
+
+ starting 13. 
+
+ ending 13. 
+
+ starting 7. 
+
+ ending 7. 
+
+ starting 12. 
+
+ ending 12. 
+
+ starting 6. 
+
+ ending 6. 
+
+ starting 11. 
+
+ ending 11. 
+
+ starting 5. 
+
+ ending 5. 
+
+ starting 10. 
+
+ ending 10. 
+
+ starting 4. 
+
+ ending 4. 
+
+ starting 15. 
+
+ ending 15. 
+
+ starting 9. 
+
+ ending 9. 
+
+ starting 16. 
+
+ ending 16. 
+
+ starting 14. 
+
+ ending 14. 
+
+ starting 17. 
+
+ ending 17. 
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+
+ starting 3. 
+
+ ending 1. 
+
+ ending 3. 
+
+ starting 8. 
+
+ ending 8. 
+
+ starting 2. 
+
+ ending 2. 
+
+ starting 7. 
+
+ ending 7. 
+
+ starting 13. 
+
+ ending 13. 
+
+ starting 12. 
+
+ ending 12. 
+
+ starting 6. 
+
+ ending 6. 
+
+ starting 5. 
+
+ ending 5. 
+
+ starting 11. 
+
+ ending 11. 
+
+ starting 4. 
+
+ ending 4. 
+
+ starting 10. 
+
+ ending 10. 
+
+ starting 15. 
+
+ ending 15. 
+
+ starting 9. 
+
+ ending 9. 
+
+ starting 14. 
+
+ ending 14. 
+
+ starting 16. 
+
+ ending 16. 
+
+ starting 17. 
+
+ ending 17. 
