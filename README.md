@@ -22,8 +22,9 @@ column 6 provides probability of the parameter being active
 
 the values are arranged in increasing order of estimated strength. 
 
-# data.csv
-PTSD symptoms data used by Epskamp et al(2018).
+PTSD symptoms data used by Epskamp et al(2018) is kept in the software for testing purpose called data.csv.
 
-# distmiss.csv
+
+
+# 16PF_data_used
 16PF data filtered and adjusted by missing values
