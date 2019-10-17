@@ -1,4 +1,4 @@
-# DGM_parcomp
+# DGM_parcomp version 2
 Matlab code for Bayesian inference of discrete graphical models using parallelization. 
 The calling function is par_discretegraph
 
