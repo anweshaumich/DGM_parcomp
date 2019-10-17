@@ -1,4 +1,4 @@
-# DGM_parcomp version 2
+# DGM_parcomp software
 Matlab code for Bayesian inference of discrete graphical models using parallelization. 
 The calling function is par_discretegraph
 
@@ -21,4 +21,9 @@ column 4 and 5 provides lower and upper bounds of credible intervals respectivel
 column 6 provides probability of the parameter being active 
 
 the values are arranged in increasing order of estimated strength. 
- 
+
+# data.csv
+PTSD symptoms data used by Epskamp et al(2018).
+
+# distmiss.csv
+16PF data filtered and adjusted by missing values
