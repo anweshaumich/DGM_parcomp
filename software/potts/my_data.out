@@ -1,0 +1,1133 @@
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+{Error using <a href="matlab:matlab.internal.language.introspective.errorDocCallback('gamma')" style="font-weight:bold">gamma</a>
+Not enough input arguments.
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('langevin_dat_gaussian', 'C:\Users\Anwesha\Dropbox\Documents\software - version 1\potts\langevin_dat_gaussian.m', 106)" style="font-weight:bold">langevin_dat_gaussian</a> (<a href="matlab: opentoline('C:\Users\Anwesha\Dropbox\Documents\software - version 1\potts\langevin_dat_gaussian.m',106,0)">line 106</a>)
+    h_old = likhd(theta_old,dd,Rg,h_matj,H_mat) + sum(dd)*log(sqrt(rho)) + sum(1-dd)*log(sqrt(gamma)) + ...
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('par_discretegraph', 'C:\Users\Anwesha\Dropbox\Documents\software - version 1\par_discretegraph.m', 34)" style="font-weight:bold">par_discretegraph</a> (<a href="matlab: opentoline('C:\Users\Anwesha\Dropbox\Documents\software - version 1\par_discretegraph.m',34,0)">line 34</a>)
+[~,~, delta, theta] = langevin_dat_gaussian(X,gam,step,c,Niter,burn,gam1,rho_in, tow_in,...
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('testing', 'C:\Users\Anwesha\Dropbox\Documents\software - version 1\testing.m', 1)" style="font-weight:bold">testing</a> (<a href="matlab: opentoline('C:\Users\Anwesha\Dropbox\Documents\software - version 1\testing.m',1,0)">line 1</a>)
+par_discretegraph('data.csv',1000,900,2,2);
+} 
+clear
+clc
+inputfile = 'data.csv';
+X = csvread(inputfile,1,0);
+if(min(unique(X))>1)
+    fprintf('error in input format!')
+elseif(min(unique(X))==1)
+    X = X-1;
+end
+
+[n,p] = size(X);
+gam1 = 300; %% penalty parameter initialization for initialization algo
+
+gam = 0.1/(n*p); rho_in = .5*sqrt(log(p)/n);
+%%% prior parameters (gam for inactives) and (rho_in for initialization of prior for active) 
+
+
+%% langevin parameters
+c = 10; %% stabilizing gradient for the langevin algorithm
+step_in = .5; %%% step size for gradient search in langevin algorithm
+
+%% adaptive rho update parameters
+tow_in = 1;compact_in = 2; mc_rate = .6; inc = .05;
+m = length(unique(X)); [n,p] = size(X);
+Rg = 0:(m-1); % gam is approximation parameter
+u=log(p);
+q = (1/p)^(1+u);
+j =  2;
+h_matj = zeros(n,p); 
+
+    for i = 1:n
+        for k = 1:p
+            
+             h_matj(i,k) = X(i,j)*X(i,k)/(m-1)^2;
+            
+        end
+    end
+    H_mat = zeros(n*m,p);
+    for i = 1:n
+        for s = 1:m
+            for k = 1:p
+               H_mat((i-1)*m + s,k) = (s-1)*X(i,k)/(m-1)^2;
+            end
+            H_mat((i-1)*m + s,j) = ((s-1)/(m-1))^2;
+        end
+    end
+    gm1 = gam1/(n*p);
+    [ theta_old,~] = initial(X,gm1,h_matj,H_mat,Rg, 500,.0001);
+   
+    dd = abs(theta_old)>0;
+    theta_init = theta_old;
+    d_init = dd;
+    rho = rho_in; tow_o = tow_in; step = step_in;
+res1 = zeros(Niter - burn,p);
+{Undefined function or variable 'Niter'.
+} 
+Niter = 1000;
+burn = 500;
+thin = 5;
+res1 = zeros(Niter - burn,p);
+    res2= zeros(Niter - burn,p);
+compact = compact_in; count_reinit = 0;
+    jj= 1; ff = 1;
+s = find(dd>0);
+        if(isempty(s)==0)
+            lo = likehdder(theta_old,dd,Rg,h_matj,H_mat);
+            g_old = lo + rho*sign(theta_old.*dd)  + (theta_old.*(1-dd))/gam;
+            G_old = g_old*(c/max(c,norm(g_old)));
+            h_old = likhd(theta_old,dd,Rg,h_matj,H_mat) + (.5/rho)*norm(theta_old.*dd)^2 + (.5/gam)*norm(theta_old.*(1-dd))^2;
+          
+            
+        for i = s
+            theta_new = theta_old;
+             
+            theta_new(i) = normrnd(theta_old(i) - .5*step*G_old(i),(step));
+            %theta_new(i) = normrnd(theta_old(i) -.5*step(i)*G_old(i),(step(i))); %%%%adaptive case
+            ln = likehdder(theta_new,dd,Rg,h_matj,H_mat);
+            g_new = ln + (theta_new.*dd)/rho  + (theta_new.*(1-dd))/gam;
+            G_new = g_new*(c/max(c,norm(g_new)));
+            h_new = likhd(theta_new,dd,Rg,h_matj,H_mat) + (.5/rho)*norm(theta_new.*dd)^2 + (.5/gam)*norm(theta_new.*(1-dd))^2;
+          
+         %save old value
+            k1 = - h_new + h_old;
+                
+            k2 = -((theta_old(i)-(theta_new(i) - step*G_new(i)/2))^2)/(2*step^2)...
+                + ((theta_new(i)-(theta_old(i) - step*G_old(i)/2))^2)/(2*step^2) ;
+        %%%% k2 = -((theta_old(i)-(theta_new(i) - step(i)*G_new(i)/2))^2)/(2*step(i)^2)...
+           %%%     + ((theta_new(i)-(theta_old(i) - step(i)*G_old(i)/2))^2)/(2*step(i)^2) ; %%% adaptive step
+            Acc = min(1,exp(k1+k2));
+            b = binornd(1,Acc);
+            b(isnan(b)) = 1;
+            theta_old(i) = theta_new(i)*b + (1-b)*theta_old(i);
+            G_old = G_new; h_old = h_new;
+        end
+        %step(i) = exp(log(step(i)) + (1/jj^0.6)*(Acc - log(step(i))); %%%% adaptive step
+        end
+do = p - sum(dd);
+        if do >0
+            
+          theta_old(logical(1-dd)) = sqrt(gam)*randn(1,do);
+        end
+h_old = likhd(theta_old,dd,Rg,h_matj,H_mat) + sum(dd)*log(sqrt(rho)) + sum(1-dd)*log(sqrt(gamma)) ...
+         + (.5/rho)*norm(theta_old.*dd)^2 + (.5/gam)*norm(theta_old.*(1-dd))^2;
+{Error using <a href="matlab:matlab.internal.language.introspective.errorDocCallback('gamma')" style="font-weight:bold">gamma</a>
+Not enough input arguments.
+} 
+h_old = likhd(theta_old,dd,Rg,h_matj,H_mat) + sum(dd)*log(sqrt(rho)) + sum(1-dd)*log(sqrt(gam)) ...
+         + (.5/rho)*norm(theta_old.*dd)^2 + (.5/gam)*norm(theta_old.*(1-dd))^2;
+for i = 1:p
+        ddprop = double(rand(1)<.5);
+        if dd(i)~=ddprop
+            ddn = dd;
+            ddn(i) = ddprop;
+            h_new = likhd(theta_old,ddn,Rg,h_matj,H_mat)+ sum(ddn)*log(sqrt(rho))+ sum(1-ddn)*log(sqrt(gamma)) + ...
+                (.5/rho)*norm(theta_old.*ddn)^2 + (.5/gam)*norm(theta_old.*(1-ddn))^2;
+            k1 = - h_new + h_old;
+            Acc = min(1,exp(k1+k2));
+            b = double(Acc>.5);
+            b(isnan(b)) = 1;
+            dd = ddn*b + (1-b)*dd;
+            h_old = h_new;
+        end
+    end
+{Error using <a href="matlab:matlab.internal.language.introspective.errorDocCallback('gamma')" style="font-weight:bold">gamma</a>
+Not enough input arguments.
+} 
+for i = 1:p
+        ddprop = double(rand(1)<.5);
+        if dd(i)~=ddprop
+            ddn = dd;
+            ddn(i) = ddprop;
+            h_new = likhd(theta_old,ddn,Rg,h_matj,H_mat)+ sum(ddn)*log(sqrt(rho))+ sum(1-ddn)*log(sqrt(gam)) + ...
+                (.5/rho)*norm(theta_old.*ddn)^2 + (.5/gam)*norm(theta_old.*(1-ddn))^2;
+            k1 = - h_new + h_old;
+            Acc = min(1,exp(k1+k2));
+            b = double(Acc>.5);
+            b(isnan(b)) = 1;
+            dd = ddn*b + (1-b)*dd;
+            h_old = h_new;
+        end
+    end
+rho_n = normrnd(rho,exp(tow_o));
+    if rho_n>0
+    k3 = .5*(1/rho-1/rho_n)*norm(theta_old.*dd)^2 + sum(dd)*(-log(sqrt(rho_n)) + log(sqrt(rho)));
+    k4 = min(1,exp(k3));
+    br = binornd(1,k4);
+    rho = rho_n*br + (1-br)*rho;
+    tow_o = tow_o + ff*(k4 - .3)/(jj^mc_rate);
+    end  
+    if abs(tow_o)>compact
+        compact = compact + inc;
+        count_reinit = count_reinit +1;
+        jj = 1; ff = ff/sqrt(2);
+        %Initialization
+        rho = rho_in; tow_o = tow_in;% gam is approximation parameter, rho is prior regularizing parameter, 
+        theta_old = theta_init; %initializing mcmc for jth set of parameters
+        dd = abs(theta_old)>0; 
+        res1 = zeros(Niter - burn,p);
+        res2= zeros(Niter - burn,p);
+%         thet_est(j,:,:) = 0;
+%         del_est(j,:,:) = 0;
+    else
+          
+        
+        %%Save result
+        if jj>burn
+            res1(jj-burn,:) = theta_old;
+            res2(jj-burn,:) = dd;
+         
+        end
+jj = jj+1;
+    end
+theta_old
+
+theta_old =
+
+   1.0e+04 *
+
+   -0.7241   -0.0041   -0.0000   -6.3181    0.0222    0.4270
+
+gm1 = gam1/(n*p);
+    [ theta_old,~] = initial(X,gm1,h_matj,H_mat,Rg, 500,.0001);
+   
+    dd = abs(theta_old)>0;
+    theta_init = theta_old;
+    d_init = dd;
+    rho = rho_in; tow_o = tow_in; step = step_in;
+    res1 = zeros(Niter - burn,p);
+    res2= zeros(Niter - burn,p);
+%parameter for Update tow
+    compact = compact_in; count_reinit = 0;
+    jj= 1; ff = 1;
+s = find(dd>0);
+s
+
+s =
+
+     1     2     4     5     6
+
+theta_old
+
+theta_old =
+
+   1.0e+04 *
+
+   -0.7241   -0.0042         0   -6.3183    0.0222    0.4270
+
+gm1 = gam1/(n*p);
+    [ theta_old,~] = initial(X,gm1,h_matj,H_mat,Rg, 500,.0001);
+theta_old
+
+theta_old =
+
+   1.0e+04 *
+
+   -0.7241   -0.0042         0   -6.3183    0.0222    0.4270
+
+m = length(unique(X)); [n,p] = size(X);
+clear
+clc
+inputfile = 'distmiss.csv'
+
+inputfile =
+
+    'distmiss.csv'
+
+X = csvread(inputfile,1,0);
+if(min(unique(X))>1)
+    fprintf('error in input format!')
+elseif(min(unique(X))==1)
+    X = X-1;
+end
+
+[n,p] = size(X);
+gam1 = 300; %% pe
+inputfile = 'data.csv'
+
+inputfile =
+
+    'data.csv'
+
+X = csvread(inputfile,1,0);
+if(min(unique(X))>1)
+    fprintf('error in input format!')
+elseif(min(unique(X))==1)
+    X = X-1;
+end
+
+[n,p] = size(X);
+gam1 = 300;
+gam = 0.1/(n*p); rho_in = .5*sqrt(log(p)/n);
+
+%% MCMC
+Niter = 1000;
+burn = 500;
+thin = 5;
+
+%% langevin parameters
+c = 10; %% stabilizing gradient for the langevin algorithm
+step_in = .5; %%% step size for gradient search in langevin algorithm
+
+%% adaptive rho update parameters
+tow_in = 1;compact_in = 2; mc_rate = .6; inc = .05;
+m = length(unique(X)); [n,p] = size(X);
+Rg = 0:(m-1); % gam is approximation parameter
+u=log(p);
+q = (1/p)^(1+u);
+j = 2;
+h_matj = zeros(n,p); 
+
+    for i = 1:n
+        for k = 1:p
+            
+             h_matj(i,k) = X(i,j)*X(i,k)/(m-1)^2;
+            
+        end
+    end
+    H_mat = zeros(n*m,p);
+    for i = 1:n
+        for s = 1:m
+            for k = 1:p
+               H_mat((i-1)*m + s,k) = (s-1)*X(i,k)/(m-1)^2;
+            end
+            H_mat((i-1)*m + s,j) = ((s-1)/(m-1))^2;
+        end
+    end
+    gm1 = gam1/(n*p);
+    [ theta_old,~] = initial(X,gm1,h_matj,H_mat,Rg, 500,.0001);
+{Error using <a href="matlab:matlab.internal.language.introspective.errorDocCallback('initial')" style="font-weight:bold">initial</a>
+Too many input arguments.
+} 
+[ theta_old,~] = initial(X,gm1,h_matj,H_mat,Rg, 500,.0001);
+   
+    dd = abs(theta_old)>0;
+theta_old
+
+theta_old =
+
+  Columns 1 through 11
+
+         0   -1.4300         0         0         0         0         0         0         0         0         0
+
+  Columns 12 through 17
+
+         0         0         0         0         0         0
+
+dd
+
+dd =
+
+  1×17 <a href="matlab:helpPopup logical" style="font-weight:bold">logical</a> array
+
+   0   1   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+
+theta_init = theta_old;
+    d_init = dd;
+    rho = rho_in; tow_o = tow_in; step = step_in;
+    res1 = zeros(Niter - burn,p);
+    res2= zeros(Niter - burn,p);
+%parameter for Update tow
+    compact = compact_in; count_reinit = 0;
+    jj= 1; ff = 1;
+s = find(dd>0);
+        if(isempty(s)==0)
+            lo = likehdder(theta_old,dd,Rg,h_matj,H_mat);
+            g_old = lo + rho*sign(theta_old.*dd)  + (theta_old.*(1-dd))/gam;
+            G_old = g_old*(c/max(c,norm(g_old)));
+            h_old = likhd(theta_old,dd,Rg,h_matj,H_mat) + (.5/rho)*norm(theta_old.*dd)^2 + (.5/gam)*norm(theta_old.*(1-dd))^2;
+          
+            
+        for i = s
+            theta_new = theta_old;
+             
+            theta_new(i) = normrnd(theta_old(i) - .5*step*G_old(i),(step));
+            %theta_new(i) = normrnd(theta_old(i) -.5*step(i)*G_old(i),(step(i))); %%%%adaptive case
+            ln = likehdder(theta_new,dd,Rg,h_matj,H_mat);
+            g_new = ln + (theta_new.*dd)/rho  + (theta_new.*(1-dd))/gam;
+            G_new = g_new*(c/max(c,norm(g_new)));
+            h_new = likhd(theta_new,dd,Rg,h_matj,H_mat) + (.5/rho)*norm(theta_new.*dd)^2 + (.5/gam)*norm(theta_new.*(1-dd))^2;
+          
+         %save old value
+            k1 = - h_new + h_old;
+                
+            k2 = -((theta_old(i)-(theta_new(i) - step*G_new(i)/2))^2)/(2*step^2)...
+                + ((theta_new(i)-(theta_old(i) - step*G_old(i)/2))^2)/(2*step^2) ;
+        %%%% k2 = -((theta_old(i)-(theta_new(i) - step(i)*G_new(i)/2))^2)/(2*step(i)^2)...
+           %%%     + ((theta_new(i)-(theta_old(i) - step(i)*G_old(i)/2))^2)/(2*step(i)^2) ; %%% adaptive step
+            Acc = min(1,exp(k1+k2));
+            b = binornd(1,Acc);
+            b(isnan(b)) = 1;
+            theta_old(i) = theta_new(i)*b + (1-b)*theta_old(i);
+            G_old = G_new; h_old = h_new;
+        end
+        %step(i) = exp(log(step(i)) + (1/jj^0.6)*(Acc - log(step(i))); %%%% adaptive step
+        end
+do = p - sum(dd);
+        if do >0
+            
+          theta_old(logical(1-dd)) = sqrt(gam)*randn(1,do);
+        end
+h_old = likhd(theta_old,dd,Rg,h_matj,H_mat) + sum(dd)*log(sqrt(rho)) + sum(1-dd)*log(sqrt(gam)) ...
+         + (.5/rho)*norm(theta_old.*dd)^2 + (.5/gam)*norm(theta_old.*(1-dd))^2 + sum(dd)*log(q/(1-q));
+    for i = 1:p
+        ddprop = double(rand(1)<.5);
+        if dd(i)~=ddprop
+            ddn = dd;
+            ddn(i) = ddprop;
+            h_new = likhd(theta_old,ddn,Rg,h_matj,H_mat)+ sum(ddn)*log(sqrt(rho))+ sum(1-ddn)*log(sqrt(gam)) + ...
+                (.5/rho)*norm(theta_old.*ddn)^2 + (.5/gam)*norm(theta_old.*(1-ddn))^2 + sum(ddn)*log(q/(1-q));
+            k1 = - h_new + h_old;
+            Acc = min(1,exp(k1+k2));
+            b = double(Acc>.5);
+            b(isnan(b)) = 1;
+            dd = ddn*b + (1-b)*dd;
+            h_old = h_new;
+        end
+    end
+   
+   
+    
+
+   % Update rho
+    rho_n = normrnd(rho,exp(tow_o));
+    if rho_n>0
+    k3 = .5*(1/rho-1/rho_n)*norm(theta_old.*dd)^2 + sum(dd)*(-log(sqrt(rho_n)) + log(sqrt(rho)));
+    k4 = min(1,exp(k3));
+    br = binornd(1,k4);
+    rho = rho_n*br + (1-br)*rho;
+    tow_o = tow_o + ff*(k4 - .3)/(jj^mc_rate);
+    end  
+    if abs(tow_o)>compact
+        compact = compact + inc;
+        count_reinit = count_reinit +1;
+        jj = 1; ff = ff/sqrt(2);
+        %Initialization
+        rho = rho_in; tow_o = tow_in;% gam is approximation parameter, rho is prior regularizing parameter, 
+        theta_old = theta_init; %initializing mcmc for jth set of parameters
+        dd = abs(theta_old)>0; 
+        res1 = zeros(Niter - burn,p);
+        res2= zeros(Niter - burn,p);
+%         thet_est(j,:,:) = 0;
+%         del_est(j,:,:) = 0;
+    else
+          
+        
+        %%Save result
+        if jj>burn
+            res1(jj-burn,:) = theta_old;
+            res2(jj-burn,:) = dd;
+         
+        end
+       % [jj/1000,sum(dd),  rho,count_reinit]
+       
+    
+        jj = jj+1;
+    end
+theta_old
+
+theta_old =
+
+  Columns 1 through 11
+
+   -0.0031   -1.4300    0.0015   -0.0009    0.0045   -0.0044    0.0001    0.0022    0.0045    0.0063    0.0003
+
+  Columns 12 through 17
+
+   -0.0060   -0.0030   -0.0043    0.0095   -0.0025    0.0030
+
+dd
+
+dd =
+
+     1     1     1     1     1     0     1     1     0     0     0     0     1     0     0     1     0
+
+dd  = abs(theta_init)>0;
+dd
+
+dd =
+
+  1×17 <a href="matlab:helpPopup logical" style="font-weight:bold">logical</a> array
+
+   0   1   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+
+IdleTimeout has been reached.
+Parallel pool using the 'local' profile is shutting down.
+h_old = likhd(theta_old,dd,Rg,h_matj,H_mat) + sum(dd)*log(sqrt(rho)) + sum(1-dd)*log(sqrt(gam)) ...
+         + (.5/rho)*norm(theta_old.*dd)^2 + (.5/gam)*norm(theta_old.*(1-dd))^2 + sum(dd)*log(q/(1-q));
+i = 1
+
+i =
+
+     1
+
+ddprop = double(rand(1)<.5)
+
+ddprop =
+
+     1
+
+dd(i)~=ddprop
+
+ans =
+
+  <a href="matlab:helpPopup logical" style="font-weight:bold">logical</a>
+
+   1
+
+ddn = dd;
+            ddn(i) = ddprop;
+ddn
+
+ddn =
+
+  1×17 <a href="matlab:helpPopup logical" style="font-weight:bold">logical</a> array
+
+   1   1   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+
+h_new = likhd(theta_old,ddn,Rg,h_matj,H_mat)+ sum(ddn)*log(sqrt(rho))+ sum(1-ddn)*log(sqrt(gam)) + ...
+                (.5/rho)*norm(theta_old.*ddn)^2 + (.5/gam)*norm(theta_old.*(1-ddn))^2 + sum(ddn)*log(q/(1-q));
+h_old
+
+h_old =
+
+  369.7074
+
+h_new
+
+h_new =
+
+  362.5197
+
+k1 = - h_new + h_old;
+k1
+
+k1 =
+
+    7.1877
+
+Acc = min(1,exp(k1));
+Acc
+
+Acc =
+
+     1
+
+b = double(Acc>.5);
+            b(isnan(b)) = 1;
+            dd = ddn*b + (1-b)*dd;
+            h_old = h_new;
+dd
+
+dd =
+
+     1     1     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0
+
+i = 2
+
+i =
+
+     2
+
+ddprop = double(rand(1)<.5)
+
+ddprop =
+
+     0
+
+if dd(i)~=ddprop
+            ddn = dd;
+            ddn(i) = ddprop;
+end
+ddn
+
+ddn =
+
+     1     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0
+
+h_new = likhd(theta_old,ddn,Rg,h_matj,H_mat)+ sum(ddn)*log(sqrt(rho))+ sum(1-ddn)*log(sqrt(gam)) + ...
+                (.5/rho)*norm(theta_old.*ddn)^2 + (.5/gam)*norm(theta_old.*(1-ddn))^2 + sum(ddn)*log(q/(1-q));
+h_new
+
+h_new =
+
+   6.2633e+04
+
+k1 = - h_new + h_old;
+k1
+
+k1 =
+
+  -6.2270e+04
+
+Acc = min(1,exp(k1));
+Acc
+
+Acc =
+
+     0
+
+b = double(Acc>.5);
+            b(isnan(b)) = 1;
+            dd = ddn*b + (1-b)*dd;
+dd
+
+dd =
+
+     1     1     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0
+
+h_old
+
+h_old =
+
+  362.5197
+
+h_new
+
+h_new =
+
+   6.2633e+04
+
+h_old = h_new*b + (1-b)*h_old;
+h_old
+
+h_old =
+
+  362.5197
+
+dd  = abs(theta_init)>0;
+h_old = likhd(theta_old,dd,Rg,h_matj,H_mat) + sum(dd)*log(sqrt(rho)) + sum(1-dd)*log(sqrt(gam)) ...
+         + (.5/rho)*norm(theta_old.*dd)^2 + (.5/gam)*norm(theta_old.*(1-dd))^2 + sum(dd)*log(q/(1-q));
+    for i = 1:p
+        ddprop = double(rand(1)<.5);
+        if dd(i)~=ddprop
+            ddn = dd;
+            ddn(i) = ddprop;
+            h_new = likhd(theta_old,ddn,Rg,h_matj,H_mat)+ sum(ddn)*log(sqrt(rho))+ sum(1-ddn)*log(sqrt(gam)) + ...
+                (.5/rho)*norm(theta_old.*ddn)^2 + (.5/gam)*norm(theta_old.*(1-ddn))^2 + sum(ddn)*log(q/(1-q));
+            k1 = - h_new + h_old;
+            Acc = min(1,exp(k1));
+            b = double(Acc>.5);
+            b(isnan(b)) = 1;
+            dd = ddn*b + (1-b)*dd;
+            h_old = h_new*b + (1-b)*h_old;
+        end
+    end
+dd
+
+dd =
+
+     0     1     1     0     1     1     1     1     0     1     0     1     0     1     0     0     0
+
+sum(dd)
+
+ans =
+
+     9
+
+clearvars -except inputfile
+X = csvread(inputfile,1,0);
+if(min(unique(X))>1)
+    fprintf('error in input format!')
+elseif(min(unique(X))==1)
+    X = X-1;
+end
+
+[n,p] = size(X);
+gam1 = 300; %% penalty parameter initialization for initialization algo
+
+%% prior parameters (gam for inactives) and (rho_in for initialization of prior for active) 
+gam = 0.1/(n*p); rho_in = .5*sqrt(log(p)/n);
+
+%% MCMC
+Niter = 2000;
+burn = 1000;
+thin = 5;
+
+%% langevin parameters
+c = 10; %% stabilizing gradient for the langevin algorithm
+step_in = .5; %%% step size for gradient search in langevin algorithm
+
+%% adaptive rho update parameters
+tow_in = 1;compact_in = 2; mc_rate = .6; inc = .05;
+%% 
+ 
+
+if(length(unique(X))>2)
+    cd ./potts
+else
+    cd ./ising
+end
+{Error using <a href="matlab:matlab.internal.language.introspective.errorDocCallback('cd')" style="font-weight:bold">cd</a>
+Cannot CD to C:\Users\Anwesha\Dropbox\Documents\software - version 1\potts\potts (Name is nonexistent or not a
+directory).
+} 
+X = csvread(inputfile,1,0);
+if(min(unique(X))>1)
+    fprintf('error in input format!')
+elseif(min(unique(X))==1)
+    X = X-1;
+end
+
+[n,p] = size(X);
+gam1 = 300; %% penalty parameter initialization for initialization algo
+
+%% prior parameters (gam for inactives) and (rho_in for initialization of prior for active) 
+gam = 0.1/(n*p); rho_in = .5*sqrt(log(p)/n);
+
+%% MCMC
+Niter = 2000;
+burn = 1000;
+thin = 5;
+
+%% langevin parameters
+c = 10; %% stabilizing gradient for the langevin algorithm
+step_in = .5; %%% step size for gradient search in langevin algorithm
+
+%% adaptive rho update parameters
+tow_in = 1;compact_in = 2; mc_rate = .6; inc = .05;
+%% 
+ 
+
+if(length(unique(X))>2)
+    cd ./potts
+else
+    cd ./ising
+end
+[~,~, delta, theta] = langevin_dat_gaussian(X,gam,step_in,c,Niter,burn,gam1,rho_in, tow_in,...
+                                                         compact_in,mc_rate,inc,nr_of_cores);
+{Undefined function or variable 'nr_of_cores'.
+} 
+nr_of_cores = 2;
+X = csvread(inputfile,1,0);
+if(min(unique(X))>1)
+    fprintf('error in input format!')
+elseif(min(unique(X))==1)
+    X = X-1;
+end
+
+[n,p] = size(X);
+gam1 = 300; %% penalty parameter initialization for initialization algo
+
+%% prior parameters (gam for inactives) and (rho_in for initialization of prior for active) 
+gam = 0.1/(n*p); rho_in = .5*sqrt(log(p)/n);
+
+%% MCMC
+Niter = 2000;
+burn = 1000;
+thin = 5;
+
+%% langevin parameters
+c = 10; %% stabilizing gradient for the langevin algorithm
+step_in = .5; %%% step size for gradient search in langevin algorithm
+
+%% adaptive rho update parameters
+tow_in = 1;compact_in = 2; mc_rate = .6; inc = .05;
+%% 
+ 
+
+if(length(unique(X))>2)
+    cd ./potts
+else
+    cd ./ising
+end
+{Error using <a href="matlab:matlab.internal.language.introspective.errorDocCallback('cd')" style="font-weight:bold">cd</a>
+Cannot CD to C:\Users\Anwesha\Dropbox\Documents\software - version 1\potts\potts (Name is nonexistent or not a
+directory).
+} 
+X = csvread(inputfile,1,0);
+if(min(unique(X))>1)
+    fprintf('error in input format!')
+elseif(min(unique(X))==1)
+    X = X-1;
+end
+
+[n,p] = size(X);
+gam1 = 300; %% penalty parameter initialization for initialization algo
+
+%% prior parameters (gam for inactives) and (rho_in for initialization of prior for active) 
+gam = 0.1/(n*p); rho_in = .5*sqrt(log(p)/n);
+
+%% MCMC
+Niter = 2000;
+burn = 1000;
+thin = 5;
+
+%% langevin parameters
+c = 10; %% stabilizing gradient for the langevin algorithm
+step_in = .5; %%% step size for gradient search in langevin algorithm
+
+%% adaptive rho update parameters
+tow_in = 1;compact_in = 2; mc_rate = .6; inc = .05;
+%% 
+ 
+
+if(length(unique(X))>2)
+    cd ./potts
+else
+    cd ./ising
+end
+[~,~, delta, theta] = langevin_dat_gaussian(X,gam,step_in,c,Niter,burn,gam1,rho_in, tow_in,...
+                                                         compact_in,mc_rate,inc,nr_of_cores);
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+
+ starting 3. 
+
+ ending 1. 
+
+ ending 3. 
+
+ starting 4. 
+
+ ending 4. 
+
+ starting 2. 
+
+ ending 2. 
+
+ starting 5. 
+
+ ending 5. 
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+
+ starting 3. 
+if system_dependent('IsDebugMode')==1, dbquit; end
+delete(gcp('nocreate'))
+Parallel pool using the 'local' profile is shutting down.
+testing
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+
+ starting 3. 
+
+ ending 1. 
+
+ ending 3. 
+
+ starting 4. 
+
+ ending 4. 
+
+ starting 2. 
+
+ ending 2. 
+
+ starting 5. 
+
+ ending 5. 
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+
+ starting 3. 
+
+ ending 1. 
+
+ ending 3. 
+
+ starting 4. 
+
+ ending 4. 
+
+ starting 2. 
+
+ ending 2. 
+
+ starting 5. 
+
+ ending 5. 
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+
+ starting 3. 
+
+ ending 1. 
+
+ ending 3. 
+
+ starting 2. 
+
+ ending 2. 
+
+ starting 8. 
+
+ ending 8. 
+
+ starting 13. 
+
+ ending 13. 
+
+ starting 12. 
+
+ ending 12. 
+
+ starting 7. 
+
+ ending 7. 
+
+ starting 6. 
+
+ ending 6. 
+
+ starting 11. 
+
+ ending 11. 
+
+ starting 10. 
+
+ ending 10. 
+
+ starting 5. 
+
+ ending 5. 
+
+ starting 4. 
+
+ ending 4. 
+
+ starting 15. 
+
+ ending 15. 
+
+ starting 9. 
+
+ ending 9. 
+
+ starting 16. 
+
+ ending 16. 
+
+ starting 14. 
+
+ ending 14. 
+
+ starting 17. 
+
+ ending 17. 
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+
+ starting 3. 
+
+ ending 1. 
+
+ ending 3. 
+
+ starting 2. 
+
+ ending 2. 
+
+ starting 8. 
+
+ ending 8. 
+
+ starting 13. 
+
+ ending 13. 
+
+ starting 12. 
+
+ ending 12. 
+
+ starting 7. 
+
+ ending 7. 
+
+ starting 11. 
+
+ ending 11. 
+
+ starting 6. 
+
+ ending 6. 
+
+ starting 10. 
+
+ ending 10. 
+
+ starting 5. 
+
+ ending 5. 
+
+ starting 4. 
+
+ ending 4. 
+
+ starting 9. 
+
+ ending 9. 
+
+ starting 15. 
+
+ ending 15. 
+
+ starting 16. 
+
+ ending 16. 
+
+ starting 14. 
+
+ ending 14. 
+
+ starting 17. 
+
+ ending 17. 
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+
+ starting 3. 
+
+ ending 1. 
+
+ ending 3. 
+
+ starting 2. 
+
+ ending 2. 
+
+ starting 8. 
+
+ ending 8. 
+
+ starting 13. 
+
+ ending 13. 
+
+ starting 12. 
+
+ ending 12. 
+
+ starting 7. 
+
+ ending 7. 
+
+ starting 11. 
+
+ ending 11. 
+
+ starting 6. 
+
+ ending 6. 
+
+ starting 10. 
+
+ ending 10. 
+
+ starting 5. 
+
+ ending 5. 
+
+ starting 4. 
+
+ ending 4. 
+
+ starting 9. 
+
+ ending 9. 
+
+ starting 15. 
+
+ ending 15. 
+
+ starting 16. 
+
+ ending 16. 
+
+ starting 14. 
+
+ ending 14. 
+
+ starting 17. 
+
+ ending 17. 
+startStarting parallel pool (parpool) using the 'local' profile ...
+connected to 2 workers.
+pool startedinitialization complete
+ starting 1. 
+
+ starting 3. 
+
+ ending 1. 
+
+ ending 3. 
+
+ starting 2. 
+
+ ending 2. 
+
+ starting 8. 
+
+ ending 8. 
+
+ starting 13. 
+
+ ending 13. 
+
+ starting 12. 
+
+ ending 12. 
+
+ starting 7. 
+
+ ending 7. 
+
+ starting 6. 
+
+ ending 6. 
+
+ starting 11. 
+
+ ending 11. 
+
+ starting 10. 
+
+ ending 10. 
+
+ starting 5. 
+
+ ending 5. 
+
+ starting 4. 
+
+ ending 4. 
+
+ starting 9. 
+
+ ending 9. 
+
+ starting 15. 
+
+ ending 15. 
+
+ starting 16. 
+
+ ending 16. 
+
+ starting 14. 
+
+ ending 14. 
+
+ starting 17. 
+
+ ending 17. 
